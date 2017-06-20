@@ -11,6 +11,8 @@
 # define BIT6_MASK 0b01000000
 # define BIT7_MASK 0b10000000
 
+#define AMOSTRAGEM 96//Quantidade de amostras que serao colhidas para determinar a velocidade do motor (minimizando o erro). Colhe duas voltas de amostras ([48pulsos por volta]*2 = 96).
+
 int teste = 0;
 int milisegundos = 0;//Variaveis que cronometram o tempo decorrido desde o inicio do sistema.
 long segundos = 0;
@@ -20,6 +22,7 @@ double botao1 = 0;//Variaveis que guardam o momento de ocorrencia de eventos em 
 double botao2 = 0;
 double encoderA = 0;
 double encoderB = 0;
+int n_amostras_encoder = 0;
 
 
 double old_botao1 = 0;//Variaveis para debouncing.
@@ -64,16 +67,16 @@ void loop() {
   
  /**
   * Desejamos que o motor gire de 0 a 1000RPM em cada sentido, sendo que
-  * o mesmo gira a 2737RPM quando alimentado com 12V sob um PWM de 255.
-  * Sendo assim, precisamos de um PWM de 94 (era 93,16, mas arredondamos para cima) para atingir o valor 1000RPM.
+  * o mesmo gira a 1315RPM quando alimentado com 7ob um PWM de 255.
+  * Sendo assim, precisamos de um PWM de 194 para atingir o valor 1000RPM.
   * do motor.
  */ 
   if(velocidade>=0){
-    OCR2A = (int)(velocidade*94)/20;//Regra de 3 para setar a velocida do motor pelo pwm. 100 esta para 93, assim como velocidade atual esta para X, onde X  o que devemos colocar em OCR2A.
+    OCR2A = (int)(velocidade*194)/20;//Regra de 3 para setar a velocida do motor pelo pwm. 100 esta para 93, assim como velocidade atual esta para X, onde X  o que devemos colocar em OCR2A.
     PORTB |= BIT4_MASK;
     PORTB &= ~BIT5_MASK;
   }else{
-    OCR2A = (int)(-velocidade*94)/20;//Se a velocidade for negativa, o motor gira para o outro lado, mas o PWM é o mesmo.
+    OCR2A = (int)(-velocidade*194)/20;//Se a velocidade for negativa, o motor gira para o outro lado, mas o PWM é o mesmo.
     PORTB |= BIT5_MASK;
     PORTB &= ~BIT4_MASK;
   }
@@ -132,9 +135,21 @@ ISR (PCINT2_vect) {
      display_sentido = -1;//Se nao,  anti horario.
     }
     
-    display_velocidade = 60/(48*(encoderA-old_encoderA));//Como o periodo medido  apenas 1/48 do periodo de umarotaçao completa, devemos multiplica-lo por 48. 60vezes eh para converter de hertz para RPM.
-  
-    old_encoderA = encoderA;//Atualiza qual  o novo valor de old_encoderA.
+    /**
+     *Sempre que chamar esta interrupço, significa que ocorreu um pulso no encoder canal A e incrementa o nmero de amostras.
+     *Nao eh necssario variavel de armazenamento temporario auxiliar, pois a variavel old_encoderA ja guarda o ultimo momento em que terminamos de colher a amostra.
+     */
+    
+    if(++n_amostras_encoder>=AMOSTRAGEM){//Quando possuirmos um numero de amostras igual a AMOSTRAGEM, realizamos a media de velocidade.colehmos
+      
+      display_velocidade = (60*AMOSTRAGEM)/(48*(encoderA-old_encoderA));//Como o periodo medido  apenas 1/48 do periodo de umarotaçao completa, devemos multiplica-lo por 48. 60vezes eh para converter de hertz para RPM. A quantidade de AMOSTRAGEM clhidas diminui, proporcionalmente, o periodo.
+      old_encoderA = encoderA;//Atualiza qual o novo valor de old_encoderA.
+      n_amostras_encoder = 0;
+      
+    }
+    
+    //Multiplicar por 5/4 eh o fator de correçãoda amostra.
+    //display_velocidade = (60*5/4)/(48*(encoderA-old_encoderA));//Como o periodo medido  apenas 1/48 do periodo de umarotaçao completa, devemos multiplica-lo por 48. 60vezes eh para converter de hertz para RPM.
     
   }
 }
