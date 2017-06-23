@@ -1,6 +1,12 @@
-//DDRB é ponteiro dereferenciado para o registrador DDRB
-//PORTB é ponteiro dereferenciado para o registrador PORTB
-//PIND e o registrador usado para leitura dos pinos 0 a 7.
+/**
+ * Este código faz o acionamento de um motor CC sob diferentes velocidades
+ * utilizando PWM. 
+ * O botão da esquerda faz ele girar mais para o sentido anti horário e o
+ * da direita para o horário.
+ * A velocidade e o sentido de rotação são MEDIDOS e exibidos no display.
+ * A velocidade e o sentido ALVO (definidos pela quantidade de cliques nos botoes)
+ * também serão exibidos n display.
+ */
 
 # define BIT0_MASK 0b00000001
 # define BIT1_MASK 0b00000010
