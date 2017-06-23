@@ -125,14 +125,17 @@ void loop() {//Rotina que, ao chegar em seu fim, é reexecutada sucessivamente.
      * Nossa margem de erro de leitura é 1/100 do valor de velocidade atual (para mais ou para menos).
      * Isto nos auxilia a verificar se a velocidade mudou realmente ou se foi apenas uma oscilação na 
      * leitura, a qual não precisamos imprimir no display.
+     * (Nunca vale zero, pois acrescentamos 0.5 fixos).
      */
-    speed_threshlod = velocidade/(double)2 + 0.5;
+  	if(velocidade>=0){speed_threshlod = velocidade/(double)2 + 0.5;}
+    else{speed_threshlod = -velocidade/(double)2 + 0.5;}
                      
     /**
      * Para que  velocidade medida seja mais proximo do valor real, tiramos a média das medidas. Em velocidades baixas, as medidas demoram
      * mais para serem adquiridas, por isso a taxa de amostragem é proporcional à velocidade.
      */
-    AMOSTRAGEM = velocidade*5;
+  	if(velocidade>=0){AMOSTRAGEM = velocidade*5;}
+    else{AMOSTRAGEM = -velocidade*5;}
   
 }
 
