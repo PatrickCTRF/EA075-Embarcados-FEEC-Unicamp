@@ -80,7 +80,7 @@ void loop() {//Rotina que, ao chegar em seu fim, é reexecutada sucessivamente.
   * do motor.
   */ 
   if(velocidade>0){
-    OCR2A = (int)(velocidade*207)/20;//Regra de 3 para setar a velocida do motor pelo pwm. 100 esta para 93, assim como velocidade atual esta para X, onde X  o que devemos colocar em OCR2A.
+    OCR2A = (int)(velocidade*207)/20;//Regra de 3 para setar a velocida do motor pelo pwm. 1000 esta para 207, assim como velocidade atual esta para X, onde X  o que devemos colocar em OCR2A.
     PORTB |= BIT4_MASK;
     PORTB &= ~BIT5_MASK;
   }
@@ -204,7 +204,7 @@ void init_PWM(){
   DDRB |= BIT3_MASK; // pino digital 11 do Arduino (OC2A) configurado como saída
   
   // Timer/Counter 2 Control Register A
-  TCCR2A = (1<<COM2A1)|(1<<COM2B1)|(1<<WGM21)|(1<<WGM20);
+  TCCR2A = (1<<COM2A1)|(1<<COM2B1)|(1<<WGM21)|(1<<WGM20);//Fast PWM mode, clear OC2A on compare match.
   
   // Output Compare 2 Register A
   OCR2A = 0; // Controla o duty cycle da saida OC2A (pino 22 do atmega). Faixa de valores: 0 a 255
