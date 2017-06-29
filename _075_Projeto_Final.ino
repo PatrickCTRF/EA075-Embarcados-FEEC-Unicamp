@@ -17,6 +17,8 @@
 # define BIT6_MASK 0b01000000
 # define BIT7_MASK 0b10000000
 
+# define TAM_ARRAY 8
+
 //Variaveis que cronometram o tempo decorrido desde o inicio do sistema.
 int milisegundos = 0;
 long segundos = 0;
@@ -44,30 +46,25 @@ double old_display_velocidade = 0;//Serve para verificarmos se a velocidade do m
 double speed_threshlod = 0;
 int AMOSTRAGEM = 4;//Indica quantas amostras devem ser obtidas para a média de cada velocidade do motor. Esta quantidade será alterada no decorrer do programa.
 
+char imprime[TAM_ARRAY] = "teste\n";//Um array/string que armazena os dados para serem nviados à UART.
+
 
 void setup() {//Rotina que só ocorre uma única vez, usada para, em geral, configuração do sistema.
   
-cli(); //desativa interrupções globais.
+  cli(); //desativa interrupções globais.
 
-//Definindo quais terminais são Escrita ou Leitura.
-DDRB = DDRB|(BIT5_MASK)|(BIT4_MASK)|(BIT3_MASK); // Os bits 5,4 e 3 (pinos 13, 12 e 11, respectivamente) sao de saida.
-DDRD = DDRD & ~(BIT2_MASK|BIT3_MASK|BIT4_MASK|BIT5_MASK);// 2 a 5 sao pinos sao de entrada para usarmos em interrupçes ou leituras.
+  initIO();//Configura os botões E SAÍDAS necessários
 
+  initInterrupt();//Configura as interrupções que usaremos nos pinos de leitura.
 
-EICRA = 0b11;//Configurra para borda de subida a interrupção INT0.
-EIMSK = 0b1;//Ativa a interrupção INT0.
-
-PCMSK2 = 0b11000;//Ativa interrupçao nos bits dos pinos 3 a 4 e desabilita-a nos demais DESTE registrador.
-PCICR = (BIT2_MASK);//Ativa as interrupçes dos pinos de bits setado no registrador PCMSK2, desativa nos demais PCMSK.
-
-init_PWM();//Inicia o PWM.
-
-sei();//Ativa interrupções globais.
-
-Serial.begin(9600);// A taxa na qual nos comunicmos com o Serial monitor.
-Serial.println("\n\nO Simulador pode \ndemorar ate 3s \npara atualizar. \nSeja Paciente. \n\nMotor ATIVO");//Mensagem para o usuário.
+  init_PWM();//Inicia o PWM.
   
-initTimer1();//Inicia a base de tempo.
+  init_UART();
+  UART_msg("\n\nO Simulador pode \ndemorar ate 3s \npara atualizar. \nSeja Paciente. \n\nMotor ATIVO");//Mensagem para o usuário.
+
+  initTimer1();//Inicia a base de tempo.
+
+  sei();//Ativa interrupções globais.
 
 }
 
@@ -102,21 +99,27 @@ void loop() {//Rotina que, ao chegar em seu fim, é reexecutada sucessivamente.
   if(display_velocidade >= old_display_velocidade + speed_threshlod || display_velocidade < old_display_velocidade - speed_threshlod){
     
     if(velocidade>=0){
-    Serial.println("\n\nSentido Alvo: Anti Horario");
-    Serial.print("Velocidade Alvo: ");
-  	Serial.println(velocidade*50);
+      UART_msg("\n\nSentido Alvo: Anti Horario\n");
+      UART_msg("Speed Alvo: ");
+      doubleToAscii10((double)velocidade*50, imprime);
+      UART_msg(imprime);
+      UART_msg("\n");
     }
     if(velocidade<0){
-      Serial.println("\n\nSentido Alvo: Horario");
-      Serial.print("Velocidade Alvo: ");
-      Serial.println(-velocidade*50);
+      UART_msg("\n\nSentido Alvo: Horario\n");
+      UART_msg("Speed Alvo: ");
+      doubleToAscii10((double)-velocidade*50, imprime);
+      UART_msg(imprime);
+      UART_msg("\n");
     }
     
-    if(display_sentido>=0){Serial.println("Sentido Medido: Anti Horario");}
-    else{Serial.println("Sentido Medido: Horario");}
+    if(display_sentido>=0){UART_msg("Sentido Medido: Anti Horario\n");}
+    else{UART_msg("Sentido Medido: Horario\n");}
     
-    Serial.print("Velocidade Medida: ");
-    Serial.println(display_velocidade);
+    UART_msg("Speed Medida: ");
+    doubleToAscii10(display_velocidade, imprime);
+    UART_msg(imprime);
+    UART_msg("\n");
     old_display_velocidade = display_velocidade;//Atualizamos o valor da última velocidade impressa na display.
     
   }
@@ -270,4 +273,59 @@ void initTimer1(){
   TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11)|(1<<CS10); 
   
   OCR1A = 250;//Valor o qual, quando TCNT1 atingir, fara ser executada a interrupço de overflow A.
+}
+
+void initIO(){//Faz a configuração dos botoes e saídas nos pinos que designamos
+ 
+  //Definindo quais terminais são Escrita ou Leitura.
+  DDRB = DDRB|(BIT5_MASK)|(BIT4_MASK)|(BIT3_MASK); // Os bits 5,4 e 3 (pinos 13, 12 e 11, respectivamente) sao de saida.
+  DDRD = DDRD & ~(BIT2_MASK|BIT3_MASK|BIT4_MASK|BIT5_MASK);// 2 a 5 sao pinos sao de entrada para usarmos em interrupçes ou leituras. 
+  
+}
+
+void initInterrupt(){//Configura as interupções que requisitamos aos pinos de leitura.
+  
+  EICRA = 0b11;//Configurra para borda de subida a interrupção INT0.
+  EIMSK = 0b1;//Ativa a interrupção INT0.
+
+  PCMSK2 = 0b11000;//Ativa interrupçao nos bits dos pinos 3 a 4 e desabilita-a nos demais DESTE registrador.
+  PCICR = (BIT2_MASK);//Ativa as interrupçes dos pinos de bits setado no registrador PCMSK2, desativa nos demais PCMSK. 
+}
+
+
+void init_UART(){//Configura a UART como transmissora.
+  UBRR0 = 103;//Tabela 20-7 do datasheet.
+  UCSR0A &= ~(1<<U2X0);//Configura velocidade
+  UCSR0B = (1<<TXEN0); //Deixamos a transmissão da UART habilitada.
+  UCSR0C = ((0<<USBS0)|(1<<UCSZ01)|(1<<UCSZ00));//Modo assíncrono, sem paridade, com 1 stop bit e 8 bits de dados.
+}
+
+void UART_send(char data){//Transmite um caractere parao monitor serial via UART
+  while(!(UCSR0A & (1<<UDRE0)));//Aguarda a UART estar desocupada.
+  UDR0 = data;
+}
+
+void UART_msg(char *msg){//Função para conveniência: Envia um array de caracteres para a UART/Monitor Serial
+	while(*msg){//Quebra este laço ao fim do array string.
+		UART_send(*msg);
+		msg++;
+	}
+}
+
+void doubleToAscii10(double d, char *s){//Recebe um número i de até seis dígitos (mais a vírgula) e o converte em array de char s.
+	
+  int i = 0;
+  int aux = (int)(d*100);//Deslocamos as casas para retirar as vírgulas.
+  
+  for(i = 0; i<TAM_ARRAY-1; i++){
+    
+    if(i != 2){//A vírgula tem que ser colocada após duas casas decimais. Se nao estivermos nesta casa, a conversão ocorre normalmente.
+      s[(TAM_ARRAY-1)-i-1] = aux%10 + '0';//Convertemos o número para caractere e o salvamos em seu devido lugar.
+      aux /= 10;//Vamos para a próxima casa a ser convertida.
+    }else{//Se é a casa da vírgula, insira-a.
+      s[(TAM_ARRAY-1)-i-1] = '.';
+    }
+      
+  }s[i]='\0';//Fechamos a string no último índice.
+  
 }
