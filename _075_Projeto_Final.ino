@@ -60,7 +60,7 @@ void setup() {//Rotina que só ocorre uma única vez, usada para, em geral, conf
   init_PWM();//Inicia o PWM.
   
   init_UART();
-  UART_msg("\n\nO Simulador pode \ndemorar ate 3s \npara atualizar. \nSeja Paciente. \n\nMotor ATIVO");//Mensagem para o usuário.
+  UART_String("\n\nO Simulador pode \ndemorar ate 3s \npara atualizar. \nSeja Paciente. \n\nMotor ATIVO");//Mensagem para o usuário.
 
   initTimer1();//Inicia a base de tempo.
 
@@ -99,27 +99,27 @@ void loop() {//Rotina que, ao chegar em seu fim, é reexecutada sucessivamente.
   if(display_velocidade >= old_display_velocidade + speed_threshlod || display_velocidade < old_display_velocidade - speed_threshlod){
     
     if(velocidade>=0){
-      UART_msg("\n\nSentido Alvo: Anti Horario\n");
-      UART_msg("Speed Alvo: ");
+      UART_String("\n\nSentido Alvo: Anti Horario\n");
+      UART_String("Speed Alvo: ");
       doubleToAscii10((double)velocidade*50, imprime);
-      UART_msg(imprime);
-      UART_msg("\n");
+      UART_String(imprime);
+      UART_String("\n");
     }
     if(velocidade<0){
-      UART_msg("\n\nSentido Alvo: Horario\n");
-      UART_msg("Speed Alvo: ");
+      UART_String("\n\nSentido Alvo: Horario\n");
+      UART_String("Speed Alvo: ");
       doubleToAscii10((double)-velocidade*50, imprime);
-      UART_msg(imprime);
-      UART_msg("\n");
+      UART_String(imprime);
+      UART_String("\n");
     }
     
-    if(display_sentido>=0){UART_msg("Sentido Medido: Anti Horario\n");}
-    else{UART_msg("Sentido Medido: Horario\n");}
+    if(display_sentido>=0){UART_String("Sentido Medido: Anti Horario\n");}
+    else{UART_String("Sentido Medido: Horario\n");}
     
-    UART_msg("Speed Medida: ");
+    UART_String("Speed Medida: ");
     doubleToAscii10(display_velocidade, imprime);
-    UART_msg(imprime);
-    UART_msg("\n");
+    UART_String(imprime);
+    UART_String("\n");
     old_display_velocidade = display_velocidade;//Atualizamos o valor da última velocidade impressa na display.
     
   }
@@ -305,11 +305,11 @@ void UART_send(char data){//Transmite um caractere parao monitor serial via UART
   UDR0 = data;
 }
 
-void UART_msg(char *msg){//Função para conveniência: Envia um array de caracteres para a UART/Monitor Serial
-	while(*msg){//Quebra este laço ao fim do array string.
-		UART_send(*msg);
-		msg++;
-	}
+void UART_String(char *msg){//Função para conveniência: Envia um array de caracteres para a UART/Monitor Serial
+  while(*msg){//Quebra este laço ao fim do array string.
+    UART_send(*msg);
+    msg++;
+  }
 }
 
 void doubleToAscii10(double d, char *s){//Recebe um número i de até seis dígitos (mais a vírgula) e o converte em array de char s.
